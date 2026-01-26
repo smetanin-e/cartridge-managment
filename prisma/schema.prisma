@@ -1,0 +1,130 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        Int      @id @default(autoincrement())
+    login     String   @unique
+    password  String
+    salt      String?
+    status    Boolean  @default(true)
+    role      UserRole @default(USER)
+    surname   String
+    firstName String
+    lastName  String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+    USER
+    ADMIN
+}
+
+model Model {
+    id         Int         @id @default(autoincrement())
+    model      String      @unique
+    cartridges Cartridge[] // 1 → many
+
+    printers Printer[]
+}
+
+model Cartridge {
+    id           Int    @id @default(autoincrement())
+    label        String @unique // Уникальный номер картриджа (например, МК101)
+    numericLabel Int //Уникальный номер картриджа без МК для сортировки
+
+    modelId Int
+    model   Model @relation(fields: [modelId], references: [id]) // many → 1
+
+    status CartridgeStatus @default(AVAILABLE)
+
+    // Связи с записями о заменах
+    replacementInstalled Replacement[] @relation("InstalledCartridge")
+    replacementRemoved   Replacement[] @relation("RemovedCartridge")
+
+    // Связи с партиями отправки в сервис (через промежуточную таблицу)
+    serviceBatchEntries ServiceBatchCartridge[]
+}
+
+enum CartridgeStatus {
+    SERVICE // В сервисе
+    WORKING // В работе
+    RESERVE // Сняты с обслуживания
+    AVAILABLE // Готовы к использованию
+    REFILL // Требуется заправка
+    DISCARDED //списан
+}
+
+model Printer {
+    id     Int     @id @default(autoincrement())
+    name   String
+    models Model[]
+}
+
+model Departament {
+    id   Int    @id @default(autoincrement())
+    name String
+
+    replacements Replacement[]
+}
+
+enum BatchStatus {
+    IN_PROGRESS // В стадии заправки (отправлена в сервис)
+    COMPLETED // Выполнено (все картриджи вернулись)
+    PARTIAL_RETURN // Частичный возврат (некоторые картриджи вернулись)
+}
+
+model Replacement {
+    id   Int    @id @default(autoincrement())
+    date String
+
+    departament   Departament @relation(fields: [departamentId], references: [id])
+    departamentId Int
+
+    installedCartridgeLabel String? // Номер установленного картриджа
+    removedCartridgeLabel   String? // Номер снятого картриджа
+    responsible             String // Ответственный за исполнение
+    createdAt               DateTime @default(now())
+
+    installedCartridge Cartridge? @relation("InstalledCartridge", fields: [installedCartridgeLabel], references: [label])
+    removedCartridge   Cartridge? @relation("RemovedCartridge", fields: [removedCartridgeLabel], references: [label])
+}
+
+// Модель для партий отправки картриджей в сервис
+model ServiceBatch {
+    id          String      @id @default(cuid())
+    date        String // Дата отправки в сервис она же номер партии
+    responsible String // Ответственный за отправку
+    notes       String? // Примечания
+    createdAt   DateTime    @default(now())
+    status      BatchStatus @default(IN_PROGRESS) // Статус партии (в работе, выполнено, частичный возврат)
+
+    partialReturnDate String? //дата частичного возврата
+    // Связь с картриджами, входящими в эту партию (через промежуточную таблицу)
+    cartridgesInBatch ServiceBatchCartridge[]
+}
+
+// Промежуточная модель для связи Cartridge и ServiceBatch
+// Позволяет отслеживать статус возврата каждого картриджа в рамках конкретной партии
+model ServiceBatchCartridge {
+    id          String    @id @default(cuid())
+    cartridgeId Int
+    cartridge   Cartridge @relation(fields: [cartridgeId], references: [id])
+
+    serviceBatchId String
+    serviceBatch   ServiceBatch @relation(fields: [serviceBatchId], references: [id])
+
+    returned          Boolean @default(false) // Был ли этот конкретный картридж возвращен
+    returnDate        String? // Дата возврата этого конкретного картриджа
+    returnResponsible String? // Ответственный за прием этого конкретного картриджа
+    returnNotes       String? // Примечания к возврату этого конкретного картриджа
+
+    @@unique([cartridgeId, serviceBatchId]) // Картридж может быть в одной партии только один раз
+}

@@ -1,0 +1,119 @@
+import React from 'react';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shared/components/ui';
+import { Eye } from 'lucide-react';
+import { BatchCartridge } from '@/entities/cartridge/model/types';
+import { BatchDTO } from '../../model/types';
+import { ShowBatchTable } from '../return';
+interface Props {
+  className?: string;
+  date: string;
+  responsible: string;
+  status: React.ReactNode;
+  cartridges: BatchCartridge[];
+  batch: BatchDTO;
+}
+
+export const ShowBatchCompleted: React.FC<Props> = ({
+  date,
+  responsible,
+  status,
+  cartridges,
+  batch,
+}) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant='outline' size='sm'>
+          <Eye className='h-4 w-4' />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className='max-w-4xl sm:max-w-auto'>
+        <DialogHeader>
+          <DialogTitle>Партия от {date} - Выполнено</DialogTitle>
+        </DialogHeader>
+        <div className='space-y-4'>
+          <div className='grid grid-cols-2 gap-4 text-sm bg-chart-2 p-4 rounded-lg'>
+            <div>
+              <strong>Дата отправки:</strong> {date}
+            </div>
+            <div>
+              <strong>Ответственный за отправку:</strong> {responsible}
+            </div>
+            <div className='flex gap-3'>
+              <strong>Статус:</strong> <p>{status}</p>
+            </div>
+            <div>
+              <strong>Всего картриджей:</strong> {cartridges.length}
+            </div>
+          </div>
+          <div className='h-80 overflow-y-auto'>
+            <div className='grid sticky top-0 z-10 text-sm font-semibold px-2 py-2 grid-cols-[100px_100px_120px_150px_150px_1fr] bg-card-header shadow-sm mb-2'>
+              <div>Номер</div>
+              <div>Модель</div>
+              <div>Статус</div>
+              <div>Дата возврата</div>
+              <div>Принял</div>
+              <div>Комментарий</div>
+            </div>
+
+            {cartridges.map((cartridge) => (
+              <div
+                key={cartridge.id}
+                className='grid px-2 py-2 items-center text-sm  grid-cols-[100px_100px_120px_150px_150px_1fr]'
+              >
+                <ShowBatchTable batch={batch} cartridge={cartridge} />
+              </div>
+            ))}
+          </div>
+          {/* <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Номер</TableHead>
+                <TableHead>Модель</TableHead>
+                <TableHead>Статус</TableHead>
+                <TableHead>Дата возврата</TableHead>
+                <TableHead>Принял</TableHead>
+                <TableHead>Комментарий</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cartridges.map((cartridge) => {
+                return (
+                  <TableRow key={cartridge.label}>
+                    <TableCell>{cartridge.label}</TableCell>
+                    <TableCell>{cartridge.model.model}</TableCell>
+
+                    <TableCell>
+                      <Badge variant={'success'}>Возвращен</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className='flex items-center gap-1 text-sm'>
+                        <Calendar className='h-3 w-3' />
+                        {cartridge.returnDate}
+                      </div>
+                    </TableCell>
+                    <TableCell>{cartridge.returnResponsible}</TableCell>
+                    <TableCell className='max-w-[200px] truncate whitespace-normal break-words'>
+                      {cartridge.returnNotes ? (
+                        <div className='text-xs max-w-[250px]'>{cartridge.returnNotes}</div>
+                      ) : (
+                        <span className='text-muted-foreground text-sm'>—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table> */}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
