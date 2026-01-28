@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  next_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        API_URL_SERVER: ${API_URL_SERVER}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_INTERNAL_API_TOKEN: ${NEXT_PUBLIC_INTERNAL_API_TOKEN}
+        INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+        DATABASE_URL: ${DATABASE_URL}
+        NEXT_PUBLIC_API_READ_KEY: ${NEXT_PUBLIC_API_READ_KEY}
+    container_name: next_app_cartridges
+    restart: always
+    ports:
+      - '3002:3000' # наружу -> внутрь
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      API_URL_SERVER: ${API_URL_SERVER}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_API_READ_KEY: ${NEXT_PUBLIC_API_READ_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
