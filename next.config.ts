@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   experimental: {
     serverActions: {
-      allowedOrigins: ['cartridges.koks.mak', '172.17.4.43', 'localhost:3000'],
+      allowedOrigins: ['cartridges.esmet.store', '91.201.114.180', 'localhost:3002'],
     },
   },
 };
