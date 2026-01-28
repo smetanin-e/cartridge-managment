@@ -16,6 +16,10 @@ COPY . .
 
 RUN npx prisma generate
 
+RUN echo "===== BUILD ENV =====" \
+ && printenv | sort \
+ && echo "====================="
+
 RUN npm run build
 
 # ---- Runner ----
