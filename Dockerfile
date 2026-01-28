@@ -4,39 +4,46 @@ WORKDIR /app
 
 # ---- Dependencies ----
 FROM base AS deps
+
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --prefer-offline
 
 # ---- Builder ----
 FROM base AS builder
 WORKDIR /app
-
-# ⚠️ FAKE DATABASE_URL — только для генерации
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
-
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_API_READ_KEY
-
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_READ_KEY=$NEXT_PUBLIC_API_READ_KEY
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npx prisma generate
+
 RUN npm run build
 
 # ---- Runner ----
 FROM base AS runner
+
 WORKDIR /app
 
-ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
 
 COPY package.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+
+# Копируем node_modules. Теперь они не включают Prisma Client,
+# что правильно, так как он будет сгенерирован ниже.
 COPY --from=deps /app/node_modules ./node_modules
+
+# Копируем Prisma схему (Обязательно для генерации!)
 COPY prisma ./prisma
 
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
 EXPOSE 3000
-CMD npm start
+ENV NODE_ENV=production
+
+# 👇 КЛЮЧЕВАЯ ИСПРАВЛЕННАЯ ЧАСТЬ
+# Генерируем Prisma Client ПЕРЕД запуском приложения.
+CMD npx prisma generate && npm start
